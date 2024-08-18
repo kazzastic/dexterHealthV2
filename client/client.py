@@ -1,22 +1,19 @@
 import asyncio
 import websockets
 import json
+import requests
 
-async def connect_to_server():
+API_URL = "http://localhost:8000/"  # API endpoint for registration
+
+async def connect_to_server(client_id):
     uri = "ws://localhost:8000/messaging"  # WebSocket server URL
 
     async with websockets.connect(uri) as websocket:
-        # Receive the client ID assigned by the server
-        connect_msg = await websocket.recv()
-        connect_data = json.loads(connect_msg)
-        client_id = connect_data.get("id")
         print(f"Connected with client ID: {client_id}")
 
         async def send_message():
             while True:
-                # Use asyncio.to_thread to avoid blocking on input
                 message = await asyncio.to_thread(input, f"Client {client_id}: Enter message: ")
-                
                 await websocket.send(json.dumps({
                     "client_id": client_id,
                     "message": message
@@ -25,12 +22,10 @@ async def connect_to_server():
         async def receive_message():
             while True:
                 try:
-                    # Receive and display message from the WebSocket server
                     response = await websocket.recv()
                     data = json.loads(response)
 
                     if data.get("type") == "message":
-                        # The message itself is a JSON string, so we need to parse it
                         message_content = json.loads(data.get("message", ""))
                         sender_id = message_content.get("client_id")
                         message_text = message_content.get("message")
@@ -43,10 +38,58 @@ async def connect_to_server():
                     print("Connection closed.")
                     break
 
-        # Run both sending and receiving tasks concurrently
         receive_task = asyncio.create_task(receive_message())
         send_task = asyncio.create_task(send_message())
         await asyncio.gather(send_task, receive_task)
 
+
+def register_user():
+    print("Registering a new user...")
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+
+    # Send POST request to the API to register the user
+    REGISTER_URL = API_URL + "register"
+    response = requests.post(REGISTER_URL, json={"username": username, "password": password})
+
+    if response.status_code == 200:
+        user_data = response.json()
+        print(f"Registration successful. Your user ID is: {user_data['id']}")
+        return user_data['id']
+    else:
+        print(f"Error: ", response.json().get("details"))
+        return None
+    
+def login_user():
+    print("Logging in the user...")
+    username = input("Enter username: ")
+    password = input("Enter password: ")
+
+    # Send a POST req to the API server to login the user
+    LOGIN_URL = API_URL + "login"
+    response = requests.post(LOGIN_URL, json={"username": username, "password": password})
+
+    if response.status_code == 200:
+        user_data = response.json()
+        print(f"Login was successful. Your user ID is: {user_data['id']}")
+        return user_data['id']
+    else:
+        print(f"Error: ", response.json().get("details"))
+        return None
+
+
 if __name__ == "__main__":
-    asyncio.run(connect_to_server())
+    choice = input("Enter 1 to register: or Enter 2 to login...")
+
+    if choice == "1":
+        # User registration
+        client_id = register_user()
+        if client_id:
+            # If registration is successful, connect to the WebSocket server
+            asyncio.run(connect_to_server(client_id))
+
+    else:
+        client_id = login_user()
+        if client_id:
+            # If registration is successful, connect to the WebSocket server
+            asyncio.run(connect_to_server(client_id))

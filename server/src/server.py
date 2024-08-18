@@ -1,7 +1,14 @@
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from dataclasses import dataclass
 import json
 import uuid
+from schemas.User import UserCreate, UserLogin
+from database import SessionLocal
+from sqlalchemy.orm import Session
+from models.User import User
+
+import logging
+import sys
 
 @dataclass 
 class ConnectionManager:
@@ -39,6 +46,23 @@ class ConnectionManager:
 
 app = FastAPI()
 
+"""Remove this"""
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+stream_handler = logging.StreamHandler(sys.stdout)
+log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%(threadName)s: %(thread)d] [%(levelname)s] %(name)s: %(message)s")
+stream_handler.setFormatter(log_formatter)
+logger.addHandler(stream_handler)
+
+""""Till this"""
+
+def get_db():
+    db = SessionLocal()
+    try: 
+        yield db
+    finally:
+        db.close()
+
 connection_manager = ConnectionManager()
 
 @app.websocket("/messaging")
@@ -62,3 +86,36 @@ async def websocket_endpoint(websocket: WebSocket):
             "type": "disconnected", 
             "id": id
         }))
+
+@app.post("/register")
+async def register_user(user: UserCreate, db: Session = Depends(get_db)):
+    #User already exists logic
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+    new_user = User(username=user.username, password = user.password)
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    return {
+        "id": new_user.id, 
+        "username": new_user.username
+    }
+
+@app.post("/login")
+async def login_user(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(User).filter(User.username == user.username).first()
+
+    if db_user is None:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    
+    if db_user.password != user.password:
+        raise HTTPException(status_code=400, detail="Invalid username or password")
+    
+    return {
+        "message": "Login Successful",
+        "id": db_user.id, 
+        "username": db_user.username
+    }
