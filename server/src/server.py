@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from models.User import User
 from models.Chat import Chat
 import bcrypt
+from passwords.passhash import hash_password
 
 @dataclass 
 class ConnectionManager:
@@ -92,7 +93,7 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Username already exists")
     
     # Hash the password
-    hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt())
+    hashed_password = hash_password(user.password)
 
 
     new_user = User(username=user.username, password = hashed_password)
@@ -107,16 +108,19 @@ async def register_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/login")
 async def login_user(user: UserLogin, db: Session = Depends(get_db)):
+    # Fetch the user from the database
     db_user = db.query(User).filter(User.username == user.username).first()
 
     if db_user is None:
         raise HTTPException(status_code=400, detail="Invalid username or password")
-    
-    if db_user.password != user.password:
+
+    # Verify the password using bcrypt
+    if not bcrypt.checkpw(user.password.encode('utf-8'), db_user.password.encode('utf-8')):
         raise HTTPException(status_code=400, detail="Invalid username or password")
-    
+
     return {
         "message": "Login Successful",
-        "id": db_user.id, 
+        "id": db_user.id,
         "username": db_user.username
     }
+
