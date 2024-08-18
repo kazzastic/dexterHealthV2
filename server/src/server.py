@@ -66,12 +66,15 @@ def get_db():
 connection_manager = ConnectionManager()
 
 @app.websocket("/messaging")
-async def websocket_endpoint(websocket: WebSocket):
+async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)):
     await connection_manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"Received from client: {data}")
+
+            print(f'Name: {data.get("friend_name")}')
+            #friend_username = db.query(User).filter(User.username == data["friend_name"]).first()
+            #print(f"Friend Info: {friend_username}")
 
             # Broadcast the received message back to all clients
             await connection_manager.broadcast(json.dumps({

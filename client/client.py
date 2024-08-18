@@ -5,7 +5,7 @@ import requests
 
 API_URL = "http://localhost:8000/"  # API endpoint for registration
 
-async def connect_to_server(client_id):
+async def connect_to_server(client_id, friend_name):
     uri = "ws://localhost:8000/messaging"  # WebSocket server URL
 
     async with websockets.connect(uri) as websocket:
@@ -16,6 +16,7 @@ async def connect_to_server(client_id):
                 message = await asyncio.to_thread(input, f"Client {client_id}: Enter message: ")
                 await websocket.send(json.dumps({
                     "client_id": client_id,
+                    "friend_name": friend_name,
                     "message": message
                 }))
 
@@ -85,11 +86,13 @@ if __name__ == "__main__":
         # User registration
         client_id = register_user()
         if client_id:
+            friend_name = input("Enter your friend's username: ")
             # If registration is successful, connect to the WebSocket server
-            asyncio.run(connect_to_server(client_id))
+            asyncio.run(connect_to_server(client_id, friend_name))
 
     else:
         client_id = login_user()
         if client_id:
+            friend_name = input("Enter your friend's username: ")
             # If registration is successful, connect to the WebSocket server
-            asyncio.run(connect_to_server(client_id))
+            asyncio.run(connect_to_server(client_id, friend_name))
