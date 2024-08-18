@@ -10,10 +10,10 @@ class ConnectionManager:
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-
-        id = str(uuid.uuid4())
+        id = str(uuid.uuid4())  # Unique ID for each client
         self.active_connections[id] = websocket
 
+        # Send back the client ID upon connection
         await self.send_message_to(websocket, json.dumps({
             "type": "connect",
             "id": id
@@ -28,7 +28,6 @@ class ConnectionManager:
         val_list = list(self.active_connections.values())
         key_list = list(self.active_connections.keys())
         id = val_list.index(websocket)
-
         return key_list[id]
     
     async def send_message_to(self, ws: WebSocket, message: str):
@@ -48,13 +47,17 @@ async def websocket_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_text()
-            print(f"Text: {data}")
+            print(f"Received from client: {data}")
 
-            await connection_manager.broadcast(data)
+            # Broadcast the received message back to all clients
+            await connection_manager.broadcast(json.dumps({
+                "type": "message",
+                "message": data
+            }))
 
     except WebSocketDisconnect:
         id = connection_manager.disconnect(websocket)
-
+        # Notify all clients of the disconnection
         await connection_manager.broadcast(json.dumps({
             "type": "disconnected", 
             "id": id
