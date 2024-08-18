@@ -1,14 +1,13 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Text
 from sqlalchemy.orm import relationship
-from database import Base
+from database import Base, engine
 
 class Chat(Base):
     __tablename__ = "chats"
 
     id = Column(Integer, primary_key=True, index=True)
-    sender_id = Column(Integer, ForeignKey('users.id'))
-    receiver_id = Column(Integer, ForeignKey('users.id'))
+    sender_id = Column(String, ForeignKey('users.id'))
+    receiver_id = Column(String, ForeignKey('users.id'))
     message = Column(Text, nullable=False)
 
-    sender = relationship("User", foreign_keys=[sender_id])
-    receiver = relationship("User", foreign_keys=[receiver_id])
+Base.metadata.create_all(bind = engine)

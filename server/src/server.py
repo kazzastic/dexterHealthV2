@@ -6,6 +6,7 @@ from schemas.User import UserCreate, UserLogin
 from database import SessionLocal
 from sqlalchemy.orm import Session
 from models.User import User
+from models.Chat import Chat
 
 import logging
 import sys
@@ -17,7 +18,7 @@ class ConnectionManager:
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        id = str(uuid.uuid4())  # Unique ID for each client
+        id = str(uuid.uuid4())  
         self.active_connections[id] = websocket
 
         # Send back the client ID upon connection
@@ -72,15 +73,21 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
         while True:
             data = await websocket.receive_text()
 
-            print(f'Name: {data.get("friend_name")}')
-            #friend_username = db.query(User).filter(User.username == data["friend_name"]).first()
-            #print(f"Friend Info: {friend_username}")
+            data_json = json.loads(data)
+
+            friend_name = data_json["friend_name"]
+            friend_id = db.query(User).filter(User.username == friend_name).first().id
+            print(f"Received from client:{friend_name} - {friend_id}")
 
             # Broadcast the received message back to all clients
             await connection_manager.broadcast(json.dumps({
                 "type": "message",
                 "message": data
             }))
+
+            new_chat = Chat(sender_id = data_json["client_id"], receiver_id = friend_id, message = data_json["message"])
+            db.add(new_chat)
+            db.commit()
 
     except WebSocketDisconnect:
         id = connection_manager.disconnect(websocket)
