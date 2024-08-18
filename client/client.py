@@ -80,7 +80,7 @@ def login_user():
 
 
 if __name__ == "__main__":
-    choice = input("Enter 1 to register: or Enter 2 to login...")
+    choice = input("Enter 1 to register: or Enter 2 to login... ")
 
     if choice == "1":
         # User registration

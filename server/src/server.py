@@ -8,9 +8,6 @@ from sqlalchemy.orm import Session
 from models.User import User
 from models.Chat import Chat
 
-import logging
-import sys
-
 @dataclass 
 class ConnectionManager:
     def __init__(self) -> None:
@@ -47,16 +44,6 @@ class ConnectionManager:
 
 app = FastAPI()
 
-"""Remove this"""
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-stream_handler = logging.StreamHandler(sys.stdout)
-log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%(threadName)s: %(thread)d] [%(levelname)s] %(name)s: %(message)s")
-stream_handler.setFormatter(log_formatter)
-logger.addHandler(stream_handler)
-
-""""Till this"""
-
 def get_db():
     db = SessionLocal()
     try: 
@@ -77,7 +64,6 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
 
             friend_name = data_json["friend_name"]
             friend_id = db.query(User).filter(User.username == friend_name).first().id
-            print(f"Received from client:{friend_name} - {friend_id}")
 
             # Broadcast the received message back to all clients
             await connection_manager.broadcast(json.dumps({
