@@ -26,6 +26,10 @@ async def connect_to_server(client_id, friend_name):
                     response = await websocket.recv()
                     data = json.loads(response)
 
+                    #sort of a beat to keep the connection alive
+                    if data.get("type") == "ping":
+                        continue
+
                     if data.get("type") == "message":
                         message_content = json.loads(data.get("message", ""))
                         sender_id = message_content.get("client_id")
