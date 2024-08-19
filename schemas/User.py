@@ -7,3 +7,4 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+    friend_name: str
