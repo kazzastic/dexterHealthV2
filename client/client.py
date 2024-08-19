@@ -77,6 +77,12 @@ def login_user():
     if response.status_code == 200:
         user_data = response.json()
         print(f"Login was successful. Your user ID is: {user_data['id']}")
+
+        if "chat_history" in user_data:
+            print("Previous Chats:")
+            for chat in user_data['chat_history']:
+                print(f"{chat['sender']} -> {chat['receiver']}: {chat['message']}")
+
         return user_data['id']
     else:
         print(f"Error: ", response.json().get("details"))
