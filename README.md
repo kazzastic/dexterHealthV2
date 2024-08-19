@@ -55,7 +55,7 @@ This was a great backend engineering exercise for me. Getting hands-on with asyn
 
 I implemented it this using websockets, if given an ample amount of time this application has the capability to truly become end-to-end chatting application, because as of now this application let's everyone interact with everyone, meaning any amount of clients could join in, and the message would be broadcasted to all of them. I implemented it that way because I could not get to connect each of the clients with eachother, say client 1 with id 001 should be connected to client 2 with id 002. As of now any number of clients could join in. 
 
-I also implemented a register and login service using REST API, meaning a user could register using a unique username and password, and then save conversation between themselves and another user which they should know the username of. The same user could also log into the system once their account as been created. 
+I also implemented a register and login service using REST API, meaning a user could register using a unique username and password, and then save conversation between themselves and another user which they should know the username of. The same user could also log into the system once their account as been created. The integrity of the password is maintained through bcrypt hashing done on the server side before the passwords are inserted into the table. The sessions are maintained in the client-server side using a ping mechanism which is implemented in the client side and ignored in the server side, keeping the websocket alive. 
 
 ### Improvements
 
