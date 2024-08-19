@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import json
 import uuid
 from schemas.User import UserCreate, UserLogin
-from database import SessionLocal
+from database import SessionLocal, get_db
 from sqlalchemy.orm import Session
 from models.User import User
 from models.Chat import Chat
@@ -45,14 +45,6 @@ class ConnectionManager:
             await connection.send_text(message)
 
 app = FastAPI()
-
-def get_db():
-    db = SessionLocal()
-    try: 
-        yield db
-    finally:
-        db.close()
-
 connection_manager = ConnectionManager()
 
 @app.websocket("/messaging")
