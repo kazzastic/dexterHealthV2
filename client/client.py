@@ -69,10 +69,11 @@ def login_user():
     print("Logging in the user...")
     username = input("Enter username: ")
     password = input("Enter password: ")
+    friend_name = input("Enter your friend's username: ")
 
     # Send a POST req to the API server to login the user
     LOGIN_URL = API_URL + "login"
-    response = requests.post(LOGIN_URL, json={"username": username, "password": password})
+    response = requests.post(LOGIN_URL, json={"username": username, "password": password, "friend_name": friend_name})
 
     if response.status_code == 200:
         user_data = response.json()
@@ -83,7 +84,7 @@ def login_user():
             for chat in user_data['chat_history']:
                 print(f"{chat['sender']} -> {chat['receiver']}: {chat['message']}")
 
-        return user_data['id']
+        return user_data['id'], friend_name
     else:
         print(f"Error: ", response.json().get("details"))
         return None
@@ -101,8 +102,7 @@ if __name__ == "__main__":
             asyncio.run(connect_to_server(client_id, friend_name))
 
     else:
-        client_id = login_user()
+        client_id, friend_name = login_user()
         if client_id:
-            friend_name = input("Enter your friend's username: ")
             # If registration is successful, connect to the WebSocket server
             asyncio.run(connect_to_server(client_id, friend_name))

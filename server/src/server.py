@@ -118,16 +118,24 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     # Fetch the user from the database
     db_user = db.query(User).filter(User.username == user.username).first()
 
+    print(user.friend_name)
     if db_user is None:
         raise HTTPException(status_code=400, detail="Invalid username or password")
 
     # Verify the password using bcrypt
     if not bcrypt.checkpw(user.password.encode('utf-8'), db_user.password.encode('utf-8')):
         raise HTTPException(status_code=400, detail="Invalid username or password")
+
+    # Fetch the friend's information from the database
+    friend_user = db.query(User).filter(User.username == user.friend_name).first()
     
-    #lets fetch all the chat messages from this sender and reciever
+    if friend_user is None:
+        raise HTTPException(status_code=404, detail="Friend not found")
+
+    # Fetch the chat messages between the logged-in user and the friend
     user_chats = db.query(Chat).filter(
-        (Chat.sender_id == db_user.id) | (Chat.receiver_id == db_user.id)
+        ((Chat.sender_id == db_user.id) & (Chat.receiver_id == friend_user.id)) |
+        ((Chat.sender_id == friend_user.id) & (Chat.receiver_id == db_user.id))
     ).all()
 
     chat_history = []
