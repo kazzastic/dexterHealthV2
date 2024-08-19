@@ -26,6 +26,10 @@ async def connect_to_server(client_id, friend_name):
                     response = await websocket.recv()
                     data = json.loads(response)
 
+                    #sort of a beat to keep the connection alive
+                    if data.get("type") == "ping":
+                        continue
+
                     if data.get("type") == "message":
                         message_content = json.loads(data.get("message", ""))
                         sender_id = message_content.get("client_id")
@@ -73,6 +77,12 @@ def login_user():
     if response.status_code == 200:
         user_data = response.json()
         print(f"Login was successful. Your user ID is: {user_data['id']}")
+
+        if "chat_history" in user_data:
+            print("Previous Chats:")
+            for chat in user_data['chat_history']:
+                print(f"{chat['sender']} -> {chat['receiver']}: {chat['message']}")
+
         return user_data['id']
     else:
         print(f"Error: ", response.json().get("details"))

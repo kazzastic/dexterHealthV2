@@ -65,7 +65,11 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
             data_json = json.loads(data)
 
             friend_name = data_json["friend_name"]
-            friend_id = db.query(User).filter(User.username == friend_name).first().id
+
+            try:
+                friend_id = db.query(User).filter(User.username == friend_name).first().id
+            except Exception as e:
+                raise HTTPException(status_code=404, detail="User not found")
 
             # Broadcast the received message back to all clients
             await connection_manager.broadcast(json.dumps({
@@ -76,6 +80,9 @@ async def websocket_endpoint(websocket: WebSocket, db: Session = Depends(get_db)
             new_chat = Chat(sender_id = data_json["client_id"], receiver_id = friend_id, message = data_json["message"])
             db.add(new_chat)
             db.commit()
+
+            #in order to keep the connection alive
+            await websocket.send_text(json.dumps({"type": "ping"}))
 
     except WebSocketDisconnect:
         id = connection_manager.disconnect(websocket)
@@ -117,10 +124,25 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     # Verify the password using bcrypt
     if not bcrypt.checkpw(user.password.encode('utf-8'), db_user.password.encode('utf-8')):
         raise HTTPException(status_code=400, detail="Invalid username or password")
+    
+    #lets fetch all the chat messages from this sender and reciever
+    user_chats = db.query(Chat).filter(
+        (Chat.sender_id == db_user.id) | (Chat.receiver_id == db_user.id)
+    ).all()
+
+    chat_history = []
+    for chat in user_chats:
+        sender = db.query(User).filter(User.id == chat.sender_id).first().username
+        receiver = db.query(User).filter(User.id == chat.receiver_id).first().username
+        chat_history.append({
+            "sender": sender,
+            "receiver": receiver,
+            "message": chat.message
+        })
 
     return {
         "message": "Login Successful",
         "id": db_user.id,
-        "username": db_user.username
+        "username": db_user.username,
+        "chat_history": chat_history
     }
-
