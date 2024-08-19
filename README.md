@@ -65,3 +65,7 @@ I have made the application improvable, meaning that if I want I could,
 - make the messages end-to-end encrypted so that DB stored messages won't be seen
 - make the interaction isolated between two clients(users)
 - once we can add interaction between 2 isolated clients, a group chat would be easily implemented
+
+### Improvements After Submission
+- Hashed Passwords
+- Chat History loading on login/startup
