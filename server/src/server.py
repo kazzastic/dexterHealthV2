@@ -1,5 +1,4 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Depends, HTTPException
-from dataclasses import dataclass
 import json
 import uuid
 from schemas.User import UserCreate, UserLogin
@@ -10,7 +9,6 @@ from models.Chat import Chat
 import bcrypt
 from passwords.passhash import hash_password
 
-@dataclass 
 class ConnectionManager:
     def __init__(self) -> None:
         self.active_connections: dict = {}
@@ -28,7 +26,7 @@ class ConnectionManager:
 
     def disconnect(self, websocket: WebSocket):
         id = self.find_connection_id(websocket)
-        del self.active_connections[id]
+        del self.active_connections[id] #This is basically another way to do self.active_connections[id].remove(websocket)
         return id
     
     def find_connection_id(self, websocket: WebSocket):
@@ -37,8 +35,8 @@ class ConnectionManager:
         id = val_list.index(websocket)
         return key_list[id]
     
-    async def send_message_to(self, ws: WebSocket, message: str):
-        await ws.send_text(message)
+    async def send_message_to(self, websocket: WebSocket, message: str):
+        await websocket.send_text(message)
 
     async def broadcast(self, message: str):
         for connection in self.active_connections.values():
@@ -110,7 +108,6 @@ async def login_user(user: UserLogin, db: Session = Depends(get_db)):
     # Fetch the user from the database
     db_user = db.query(User).filter(User.username == user.username).first()
 
-    print(user.friend_name)
     if db_user is None:
         raise HTTPException(status_code=400, detail="Invalid username or password")
 

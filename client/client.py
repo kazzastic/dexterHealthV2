@@ -104,5 +104,5 @@ if __name__ == "__main__":
     else:
         client_id, friend_name = login_user()
         if client_id:
-            # If registration is successful, connect to the WebSocket server
+            # If login is successful, connect to the WebSocket server
             asyncio.run(connect_to_server(client_id, friend_name))
